@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Chart Editor — Rhythm Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  body { overflow-y: auto; height: auto; min-height: 100dvh; }
+  .editorWrap {
+    max-width: 480px; margin: 0 auto; padding: 20px 16px 60px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .editorCard {
+    background: var(--bg-white); border: 3px solid var(--pastel-purple-dark);
+    border-radius: 24px; padding: 18px 20px;
+  }
+  .editorTitle { font-size: 22px; font-weight: 800; color: var(--pastel-purple-dark); margin: 0 0 4px; -webkit-text-stroke:0.5px #222; paint-order: stroke fill;}
+  .editorSub { font-size: 13px; opacity: 0.75; margin: 0 0 12px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row + .row { margin-top: 10px; }
+  .smallBtn {
+    padding: 10px 16px; border-radius: 30px; border: none; font-family: inherit;
+    font-weight: 800; font-size: 14px; cursor: pointer; color: #fff;
+    background: var(--pastel-purple-dark);
+  }
+  .smallBtn.secondary { background: var(--pastel-blue-dark); }
+  .smallBtn.danger { background: #C25B5B; }
+  .smallBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+  #timeDisplay { font-weight: 800; font-size: 15px; }
+  .offsetRow input[type=range] { flex: 1; }
+  .lanePads { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+  .lanePad {
+    width: 64px; height: 64px; border-radius: 50%; border: none; color: #fff;
+    font-size: 22px; font-weight: 800; cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  }
+  .lanePad:active { transform: scale(0.9); }
+  .lanePad.up { background: var(--lane-up); }
+  .lanePad.left { background: var(--lane-left); }
+  .lanePad.down { background: var(--lane-down); }
+  .lanePad.right { background: var(--lane-right); }
+  .noteList { max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .noteRow {
+    display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.5);
+    border-radius: 12px; padding: 6px 10px; font-size: 13px; font-weight: 600;
+  }
+  .noteRow .lanePill {
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  }
+  .noteRow .nTime { flex: 1; }
+  .noteRow .delBtn {
+    border: none; background: none; color: #C25B5B; font-weight: 800; cursor: pointer; font-size: 16px;
+  }
+  .lane-up { background: var(--lane-up); }
+  .lane-left { background: var(--lane-left); }
+  .lane-down { background: var(--lane-down); }
+  .lane-right { background: var(--lane-right); }
+  .statusMsg { font-size: 13px; font-weight: 700; min-height: 18px; }
+  .statusMsg.ok { color: #4C8C5A; }
+  .statusMsg.err { color: #C25B5B; }
+</style>
+</head>
+<body>
+
+<div class="editorWrap">
+
+  <div class="editorCard">
+    <h1 class="editorTitle">🎼 Chart Editor</h1>
+    <p class="editorSub">
+      Halaman ini cuma buat KAMU (pemilik web) buat ngatur ketukan manual.
+      Pemain lain nggak perlu buka halaman ini. Setelah selesai, download
+      <code>chart.json</code> lalu taruh di folder <code>assets/</code>
+      sebelum di-deploy.
+    </p>
+    <div id="songStatusEditor" class="statusMsg">Memuat lagu…</div>
+  </div>
+
+  <div class="editorCard">
+    <div class="row">
+      <button id="playPauseBtn" class="smallBtn" disabled>▶ Play</button>
+      <button id="restartBtn" class="smallBtn secondary" disabled>⟲ Ulang dari 0</button>
+      <span id="timeDisplay">0:00 / 0:00</span>
+    </div>
+    <div class="row offsetRow">
+      <label for="offsetSlider" style="font-size:13px; font-weight:700;">Offset ketukan</label>
+      <input type="range" id="offsetSlider" min="-400" max="400" step="10" value="-150">
+      <span id="offsetVal" style="font-weight:800; font-size:13px;">-150 ms</span>
+    </div>
+    <p class="editorSub" style="margin:4px 0 0;">
+      Offset ini otomatis mengurangi waktu ketuk kamu (kompensasi reaksi/jeda
+      tangan). Kalau notes kerasa selalu telat pas dites, geser makin ke kiri
+      (minus). Kalau kerasa selalu kecepetan, geser ke kanan.
+    </p>
+  </div>
+
+  <div class="editorCard">
+    <p class="editorSub" style="margin-bottom:8px;">
+      Sambil lagu diputar, ketuk salah satu tombol ini (atau pakai panah
+      keyboard ↑←↓→) tepat di ketukan yang kamu mau jadi note.
+    </p>
+    <div class="lanePads">
+      <button class="lanePad up" data-lane="up">▲</button>
+      <button class="lanePad left" data-lane="left">◀</button>
+      <button class="lanePad down" data-lane="down">▼</button>
+      <button class="lanePad right" data-lane="right">▶</button>
+    </div>
+  </div>
+
+  <div class="editorCard">
+    <div class="row" style="justify-content: space-between;">
+      <strong id="noteCount" style="font-size:14px;">0 notes</strong>
+      <div class="row" style="gap:6px;">
+        <button id="undoBtn" class="smallBtn secondary" disabled>Undo terakhir</button>
+        <button id="clearBtn" class="smallBtn danger" disabled>Hapus semua</button>
+      </div>
+    </div>
+    <div id="noteList" class="noteList" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="editorCard">
+    <div class="row">
+      <button id="downloadBtn" class="smallBtn" disabled>⬇ Download chart.json</button>
+      <label class="smallBtn secondary" style="display:inline-block;">
+        ⬆ Load chart.json
+        <input type="file" id="loadFile" accept=".json" style="display:none;">
+      </label>
+    </div>
+    <div id="editorSaveStatus" class="statusMsg"></div>
+  </div>
+
+</div>
+
+<script src="editor.js"></script>
+</body>
+</html>
